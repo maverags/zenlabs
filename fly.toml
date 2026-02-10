@@ -1,8 +1,8 @@
 # Fly.io App Configuration
 # https://fly.io/docs/reference/configuration/
 
-app = "spa-salon-ai"
-primary_region = "iad"
+app = "zmini"
+primary_region = "bom"
 
 [build]
 
