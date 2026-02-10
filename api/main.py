@@ -1,10 +1,10 @@
 """
 FastAPI Backend for Spa/Salon AI Agent System
-Complete version with all routes - for Fly.io deployment
+Complete version with dashboard UI and all API routes
 """
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from contextlib import asynccontextmanager
 import asyncpg
 import os
@@ -82,27 +82,280 @@ class DashboardMetrics(BaseModel):
     low_stock_items: int
     at_risk_customers: int
 
-class Customer(BaseModel):
-    id: str
-    name: str
-    email: Optional[str]
-    phone: str
-    total_visits: int
-    total_spent: float
-    loyalty_points: int
-    last_visit: Optional[date]
-
 # ================================================================
-# HEALTH CHECK & ROOT
+# DASHBOARD UI - ROOT ENDPOINT
 # ================================================================
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def root():
-    return {
-        "service": "Spa Agent AI API",
-        "status": "running",
-        "version": "1.0.0"
-    }
+    """Serve main dashboard"""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Spa/Salon Management System</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 20px;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            .header {
+                text-align: center;
+                color: white;
+                margin-bottom: 40px;
+            }
+            .header h1 {
+                font-size: 48px;
+                margin-bottom: 10px;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            }
+            .header p {
+                font-size: 20px;
+                opacity: 0.9;
+            }
+            .cards {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
+            }
+            .card {
+                background: white;
+                border-radius: 12px;
+                padding: 30px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                transition: transform 0.3s ease;
+                cursor: pointer;
+            }
+            .card:hover {
+                transform: translateY(-5px);
+            }
+            .card h3 {
+                color: #667eea;
+                margin-bottom: 15px;
+                font-size: 24px;
+            }
+            .card p {
+                color: #666;
+                line-height: 1.6;
+                margin-bottom: 20px;
+            }
+            .card .value {
+                font-size: 36px;
+                font-weight: bold;
+                color: #667eea;
+                margin-bottom: 10px;
+            }
+            .btn {
+                display: inline-block;
+                background: #667eea;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 6px;
+                text-decoration: none;
+                font-weight: 600;
+                transition: background 0.3s ease;
+            }
+            .btn:hover {
+                background: #5568d3;
+            }
+            .status {
+                background: white;
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            .status-item {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px 0;
+                border-bottom: 1px solid #eee;
+            }
+            .status-item:last-child {
+                border-bottom: none;
+            }
+            .status-label {
+                font-weight: 600;
+                color: #333;
+            }
+            .status-value {
+                color: #667eea;
+                font-weight: 600;
+            }
+            .footer {
+                text-align: center;
+                color: white;
+                margin-top: 40px;
+                opacity: 0.8;
+            }
+            .metric-card {
+                background: white;
+                border-radius: 12px;
+                padding: 25px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                text-align: center;
+            }
+            .metric-value {
+                font-size: 48px;
+                font-weight: bold;
+                color: #667eea;
+                margin: 10px 0;
+            }
+            .metric-label {
+                font-size: 16px;
+                color: #666;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🏨 Spa Agent AI System</h1>
+                <p>AI-Powered Business Operations Platform</p>
+            </div>
+
+            <div class="status" id="system-status">
+                <h3 style="margin-bottom: 15px; color: #667eea;">System Status</h3>
+                <div class="status-item">
+                    <span class="status-label">API Status:</span>
+                    <span class="status-value" id="api-status">Loading...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Database:</span>
+                    <span class="status-value" id="db-status">Loading...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Environment:</span>
+                    <span class="status-value">Fly.io + Supabase</span>
+                </div>
+            </div>
+
+            <h2 style="color: white; margin: 30px 0 20px 0; text-align: center;">📊 Live Business Metrics</h2>
+            
+            <div class="cards" id="metrics-cards">
+                <div class="metric-card">
+                    <div class="metric-label">Today's Appointments</div>
+                    <div class="metric-value" id="appointments">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Today's Revenue</div>
+                    <div class="metric-value" id="revenue">$0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Active Staff</div>
+                    <div class="metric-value" id="staff">-</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">At-Risk Customers</div>
+                    <div class="metric-value" id="at-risk">-</div>
+                </div>
+            </div>
+
+            <h2 style="color: white; margin: 30px 0 20px 0; text-align: center;">🔧 Quick Actions</h2>
+
+            <div class="cards">
+                <div class="card" onclick="window.open('/api/services', '_blank')">
+                    <h3>📋 Services</h3>
+                    <p>View all 30 professional services with pricing and details.</p>
+                    <div class="value" id="service-count">30</div>
+                </div>
+
+                <div class="card" onclick="window.open('/api/staff', '_blank')">
+                    <h3>👥 Staff Members</h3>
+                    <p>View staff roster, schedules, and availability.</p>
+                    <div class="value" id="staff-count">7</div>
+                </div>
+
+                <div class="card" onclick="window.open('/api/customers/at-risk', '_blank')">
+                    <h3>⚠️ At-Risk Customers</h3>
+                    <p>Customers who need retention campaigns.</p>
+                    <div class="value" id="at-risk-count">-</div>
+                </div>
+
+                <div class="card" onclick="window.open('/api/dashboard/low-stock', '_blank')">
+                    <h3>📦 Low Stock Items</h3>
+                    <p>Products that need to be reordered.</p>
+                    <div class="value" id="low-stock-count">-</div>
+                </div>
+
+                <div class="card" onclick="window.open('/api/dashboard/staff-performance', '_blank')">
+                    <h3>📈 Staff Performance</h3>
+                    <p>View detailed staff KPIs and metrics.</p>
+                    <a class="btn">View Reports</a>
+                </div>
+
+                <div class="card" onclick="window.open('/docs', '_blank')">
+                    <h3>📚 API Documentation</h3>
+                    <p>Interactive API docs with testing capabilities.</p>
+                    <a class="btn">Open Docs</a>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>🚀 Powered by Claude AI, FastAPI, Supabase & Fly.io</p>
+                <p style="margin-top: 10px;">Cloud-Native • Production-Ready • Live API: <a href="https://restless-hill-641.fly.dev" style="color: white;">restless-hill-641.fly.dev</a></p>
+            </div>
+        </div>
+
+        <script>
+            // Check system status
+            async function checkStatus() {
+                try {
+                    const response = await fetch('/health');
+                    const data = await response.json();
+                    document.getElementById('api-status').textContent = '✅ Online';
+                    document.getElementById('db-status').textContent = data.database;
+                } catch (error) {
+                    document.getElementById('api-status').textContent = '❌ Error';
+                    document.getElementById('db-status').textContent = '❌ Error';
+                }
+            }
+
+            // Load live metrics
+            async function loadMetrics() {
+                try {
+                    const response = await fetch('/api/dashboard/metrics');
+                    const data = await response.json();
+                    
+                    document.getElementById('appointments').textContent = data.today_appointments || 0;
+                    document.getElementById('revenue').textContent = '$' + (data.today_revenue || 0).toFixed(2);
+                    document.getElementById('staff').textContent = data.active_staff || 0;
+                    document.getElementById('at-risk').textContent = data.at_risk_customers || 0;
+                    document.getElementById('at-risk-count').textContent = data.at_risk_customers || 0;
+                    document.getElementById('low-stock-count').textContent = data.low_stock_items || 0;
+                } catch (error) {
+                    console.error('Failed to load metrics:', error);
+                }
+            }
+
+            // Load on start
+            checkStatus();
+            loadMetrics();
+            
+            // Refresh every 30 seconds
+            setInterval(() => {
+                checkStatus();
+                loadMetrics();
+            }, 30000);
+        </script>
+    </body>
+    </html>
+    """
+
+# ================================================================
+# HEALTH CHECK
+# ================================================================
 
 @app.get("/health")
 async def health_check():
@@ -110,7 +363,7 @@ async def health_check():
     try:
         async with db_pool.acquire() as conn:
             await conn.fetchval("SELECT 1")
-        return {"status": "healthy", "database": "connected"}
+        return {"status": "healthy", "database": "✅ Connected"}
     except Exception as e:
         return JSONResponse(
             status_code=503,
@@ -192,11 +445,7 @@ async def get_low_stock_products(conn=Depends(get_db)):
 # ================================================================
 
 @app.get("/api/customers")
-async def list_customers(
-    limit: int = 50,
-    offset: int = 0,
-    conn=Depends(get_db)
-):
+async def list_customers(limit: int = 50, offset: int = 0, conn=Depends(get_db)):
     """List all customers with pagination"""
     try:
         customers = await conn.fetch(
@@ -251,15 +500,11 @@ async def get_todays_appointments(conn=Depends(get_db)):
         appointments = await conn.fetch(
             """
             SELECT 
-                a.id,
-                a.appointment_number,
+                a.id, a.appointment_number,
                 c.name as customer_name,
                 s.first_name || ' ' || s.last_name as staff_name,
-                a.scheduled_date,
-                a.start_time,
-                a.end_time,
-                a.status,
-                a.total_amount
+                a.scheduled_date, a.start_time, a.end_time,
+                a.status, a.total_amount
             FROM appointments a
             JOIN customers c ON a.customer_id = c.id
             JOIN staff s ON a.staff_id = s.id
@@ -279,14 +524,11 @@ async def get_upcoming_appointments(days: int = 7, conn=Depends(get_db)):
         appointments = await conn.fetch(
             """
             SELECT 
-                a.id,
-                a.appointment_number,
+                a.id, a.appointment_number,
                 c.name as customer_name,
                 s.first_name || ' ' || s.last_name as staff_name,
-                a.scheduled_date,
-                a.start_time,
-                a.status,
-                a.total_amount
+                a.scheduled_date, a.start_time,
+                a.status, a.total_amount
             FROM appointments a
             JOIN customers c ON a.customer_id = c.id
             JOIN staff s ON a.staff_id = s.id
@@ -318,8 +560,7 @@ async def list_services(category: Optional[str] = None, conn=Depends(get_db)):
                     s.description
                 FROM services s
                 JOIN service_categories sc ON s.category_id = sc.id
-                WHERE s.is_active = true
-                  AND sc.name = $1
+                WHERE s.is_active = true AND sc.name = $1
                 ORDER BY s.display_order
                 """,
                 category
@@ -393,8 +634,7 @@ async def get_staff_availability(staff_id: str, conn=Depends(get_db)):
                 day_of_week, start_time, end_time,
                 break_start, break_end
             FROM staff_availability
-            WHERE staff_id = $1::UUID
-              AND is_available = true
+            WHERE staff_id = $1::UUID AND is_available = true
             ORDER BY day_of_week
             """,
             staff_id
@@ -403,55 +643,6 @@ async def get_staff_availability(staff_id: str, conn=Depends(get_db)):
     except Exception as e:
         logger.error(f"Staff availability error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-# ================================================================
-# AI AGENT ENDPOINTS
-# ================================================================
-
-@app.get("/api/agents/actions")
-async def get_agent_actions(
-    limit: int = 50,
-    agent_id: Optional[str] = None,
-    conn=Depends(get_db)
-):
-    """Get recent AI agent actions"""
-    try:
-        if agent_id:
-            actions = await conn.fetch(
-                """
-                SELECT agent_id, action_type, reasoning,
-                       confidence, created_at
-                FROM agent_actions
-                WHERE agent_id = $1
-                ORDER BY created_at DESC
-                LIMIT $2
-                """,
-                agent_id, limit
-            )
-        else:
-            actions = await conn.fetch(
-                """
-                SELECT agent_id, action_type, reasoning,
-                       confidence, created_at
-                FROM agent_actions
-                ORDER BY created_at DESC
-                LIMIT $1
-                """,
-                limit
-            )
-        return [dict(row) for row in actions]
-    except Exception as e:
-        logger.error(f"Agent actions error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/agents/run-analysis")
-async def run_agent_analysis(analysis_type: str, conn=Depends(get_db)):
-    """Trigger AI agent analysis"""
-    return {
-        "status": "queued",
-        "analysis_type": analysis_type,
-        "message": "Agent analysis has been queued for execution"
-    }
 
 # ================================================================
 # INVENTORY ENDPOINTS
@@ -467,8 +658,7 @@ async def list_products(category: Optional[str] = None, conn=Depends(get_db)):
                 SELECT id, sku, name, category, brand,
                        retail_price, current_stock, reorder_point
                 FROM retail_products
-                WHERE is_active = true
-                  AND category = $1
+                WHERE is_active = true AND category = $1
                 ORDER BY name
                 """,
                 category
