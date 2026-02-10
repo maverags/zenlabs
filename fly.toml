@@ -23,7 +23,7 @@ primary_region = 'bom'
     timeout = '5s'
     grace_period = '5s'
     method = 'GET'
-    path = '/api/health'
+    path = '/health'
 
 [[vm]]
   cpu_kind = 'shared'
