@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Omnichannel Booking & POS Demo - Spa Agent AI</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .tab-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .tab-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* CALENDAR STYLES */
+        .calendar-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .calendar-header h2 {
+            color: #667eea;
+            font-size: 28px;
+        }
+        .calendar-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        .btn:hover {
+            background: #5568d3;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 100px repeat(7, 1fr);
+            gap: 1px;
+            background: #e0e0e0;
+            border: 1px solid #e0e0e0;
+        }
+        .calendar-cell {
+            background: white;
+            padding: 15px 10px;
+            min-height: 80px;
+            position: relative;
+        }
+        .calendar-cell.header {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            padding: 15px;
+        }
+        .calendar-cell.time {
+            background: #f8f9fa;
+            font-weight: 600;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .calendar-cell.slot {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .calendar-cell.slot:hover {
+            background: #f0f0ff;
+        }
+        .calendar-cell.booked {
+            background: #e6f7ff;
+            cursor: default;
+        }
+        .appointment {
+            background: #667eea;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        .appointment strong {
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        /* BOOKING FORM STYLES */
+        .booking-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        /* OMNICHANNEL DEMO STYLES */
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .channel-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .channel-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .chat-interface {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        .message {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .message.user {
+            background: #667eea;
+            color: white;
+            margin-left: 40px;
+        }
+        .message.agent {
+            background: white;
+            margin-right: 40px;
+        }
+        .message strong {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        .input-group input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        
+        /* POS STYLES */
+        .pos-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .product-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .product-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        .product-card h4 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .product-card .price {
+            color: #667eea;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .product-card .stock {
+            font-size: 12px;
+            color: #666;
+        }
+        .cart-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            position: sticky;
+            top: 20px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .cart-total {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #667eea;
+        }
+        
+        /* STATUS BADGES */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        /* VOICE INTERFACE */
+        .voice-interface {
+            text-align: center;
+            padding: 40px;
+        }
+        .voice-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #667eea;
+            border: none;
+            color: white;
+            font-size: 48px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+        .voice-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
+        }
+        .voice-button.active {
+            background: #dc3545;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .transcript {
+            margin-top: 30px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 100px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Omnichannel Booking & POS System</h1>
+            <p>Multi-Channel AI Agent Demo - Book via SMS, Voice, Web, or Events</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="showTab('calendar')">📅 Calendar & Booking</button>
+            <button class="tab-btn" onclick="showTab('sms')">📱 SMS Booking</button>
+            <button class="tab-btn" onclick="showTab('voice')">🎤 Voice Booking</button>
+            <button class="tab-btn" onclick="showTab('events')">⚡ Event Booking</button>
+            <button class="tab-btn" onclick="showTab('pos')">💰 POS System</button>
+        </div>
+
+        <!-- CALENDAR & BOOKING TAB -->
+        <div id="calendar" class="tab-content active">
+            <div class="booking-panel">
+                <h2 style="color: #667eea; margin-bottom: 20px;">Quick Book Appointment</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Customer Name *</label>
+                        <input type="text" id="customerName" placeholder="Enter customer name">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone *</label>
+                        <input type="tel" id="customerPhone" placeholder="555-1234">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="customerEmail" placeholder="customer@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Service *</label>
+                        <select id="serviceSelect">
+                            <option value="">Select a service...</option>
+                            <option value="haircut-w">Women's Haircut - $75 (60 min)</option>
+                            <option value="haircut-m">Men's Haircut - $45 (45 min)</option>
+                            <option value="balayage">Balayage - $225 (180 min)</option>
+                            <option value="massage">Swedish Massage - $120 (60 min)</option>
+                            <option value="facial">Classic Facial - $95 (60 min)</option>
+                            <option value="manicure">Gel Manicure - $45 (45 min)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Staff Preference</label>
+                        <select id="staffSelect">
+                            <option value="">Any available staff</option>
+                            <option value="staff1">Sarah Johnson (Stylist)</option>
+                            <option value="staff2">Michael Chen (Stylist)</option>
+                            <option value="staff3">Emily Rodriguez (Massage)</option>
+                            <option value="staff4">David Kim (Esthetician)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date & Time *</label>
+                        <input type="datetime-local" id="appointmentTime">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="appointmentNotes" placeholder="Any special requests or notes..."></textarea>
+                </div>
+                <button class="btn btn-success" onclick="createAppointment()">📅 Create Appointment</button>
+            </div>
+
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <h2>This Week's Schedule</h2>
+                    <div class="calendar-controls">
+                        <button class="btn">← Previous Week</button>
+                        <span style="margin: 0 20px; font-weight: 600;">Week of Feb 11, 2026</span>
+                        <button class="btn">Next Week →</button>
+                    </div>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Calendar will be generated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- SMS BOOKING TAB -->
+        <div id="sms" class="tab-content">
+            <div class="channel-grid">
+                <div class="channel-card">
+                    <h3>📱 SMS Booking Interface</h3>
+                    <p style="margin-bottom: 20px; color: #666;">Simulate customer booking via text message</p>
+                    
+                    <div class="chat-interface" id="smsChat">
+                        <div class="message agent">
+                            <strong>Spa Agent AI</strong>
+                            Welcome! Text me to book an appointment. Try: "Book haircut tomorrow at 2pm" or "What's available on Friday?"
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <input type="text" id="smsInput" placeholder="Type your booking request..." onkeypress="if(event.key==='Enter') sendSMS()">
+                        <button class="btn" onclick="sendSMS()">Send SMS</button>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                        <strong>Try these examples:</strong>
+                        <div style="margin-top: 10px;">
+                            <button class="btn" style="margin: 5px; padding: 8px 12px; font-size: 13px;" onclick="quickSMS('Book haircut tomorrow at 2pm')">Book haircut tomorrow</button>
+                            <button class="btn" style="margin: 5px; padding: 8px 12px; font-size: 13px;" onclick="quickSMS('I need a massage this Friday afternoon')">Need massage Friday</button>
+                            <button class="btn" style="margin: 5px; padding: 8px 12px; font-size: 13px;" onclick="quickSMS('Cancel my appointment')">Cancel appointment</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="channel-card">
+                    <h3>🎯 How SMS Booking Works</h3>
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 8px; line-height: 1.8;">
+                        <p><strong>1. Customer sends text:</strong><br>"Book haircut tomorrow 2pm"</p>
+                        <p style="margin-top: 15px;"><strong>2. AI Agent analyzes:</strong><br>• Intent: booking<br>• Service: haircut<br>• Date: tomorrow<br>• Time: 2pm</p>
+                        <p style="margin-top: 15px;"><strong>3. Agent responds:</strong><br>"Found 3 slots tomorrow at 2pm. Reply 1, 2, or 3 to book."</p>
+                        <p style="margin-top: 15px;"><strong>4. Customer confirms:</strong><br>"1"</p>
+                        <p style="margin-top: 15px;"><strong>5. Appointment created:</strong><br>"✅ Booked! Tuesday 2PM with Sarah."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VOICE BOOKING TAB -->
+        <div id="voice" class="tab-content">
+            <div class="channel-card">
+                <h3>🎤 Voice Booking Demo</h3>
+                <p style="margin-bottom: 30px; color: #666; text-align: center;">Click the microphone to simulate a voice booking call</p>
+                
+                <div class="voice-interface">
+                    <button class="voice-button" id="voiceBtn" onclick="toggleVoice()">🎤</button>
+                    <p style="margin-top: 20px; font-size: 18px; font-weight: 600;" id="voiceStatus">Click to start call</p>
+                    
+                    <div class="transcript" id="voiceTranscript">
+                        <strong>Call Transcript:</strong>
+                        <div id="transcriptContent" style="margin-top: 10px;">No active call</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                    <h4 style="color: #667eea; margin-bottom: 15px;">Voice Call Flow:</h4>
+                    <div style="line-height: 2;">
+                        <p>🤖 <strong>Agent:</strong> "Hi! Thanks for calling. How can I help you today?"</p>
+                        <p>👤 <strong>Customer:</strong> "I want to book a massage appointment"</p>
+                        <p>🤖 <strong>Agent:</strong> "Great! What day works best for you?"</p>
+                        <p>👤 <strong>Customer:</strong> "This Friday afternoon"</p>
+                        <p>🤖 <strong>Agent:</strong> "I have 2PM, 3PM, or 4PM available. Which time?"</p>
+                        <p>👤 <strong>Customer:</strong> "2PM sounds perfect"</p>
+                        <p>🤖 <strong>Agent:</strong> "Perfect! You're booked for Friday at 2PM. Confirmation sent!"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EVENT BOOKING TAB -->
+        <div id="events" class="tab-content">
+            <div class="channel-grid">
+                <div class="channel-card">
+                    <h3>⚡ Event-Triggered Booking</h3>
+                    <p style="margin-bottom: 20px; color: #666;">Simulate automatic bookings from external events</p>
+                    
+                    <div style="display: grid; gap: 15px;">
+                        <div style="padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                            <h4 style="color: #333; margin-bottom: 10px;">Walk-In Customer</h4>
+                            <p style="color: #666; margin-bottom: 15px;">Customer arrives without appointment</p>
+                            <button class="btn btn-success" onclick="triggerWalkIn()">👤 Process Walk-In</button>
+                        </div>
+                        
+                        <div style="padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                            <h4 style="color: #333; margin-bottom: 10px;">Online Form Submission</h4>
+                            <p style="color: #666; margin-bottom: 15px;">Website booking form submitted</p>
+                            <button class="btn btn-success" onclick="triggerWebForm()">📝 Simulate Web Booking</button>
+                        </div>
+                        
+                        <div style="padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                            <h4 style="color: #333; margin-bottom: 10px;">Email Request</h4>
+                            <p style="color: #666; margin-bottom: 15px;">Customer emails booking request</p>
+                            <button class="btn btn-success" onclick="triggerEmail()">📧 Process Email Booking</button>
+                        </div>
+                        
+                        <div style="padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                            <h4 style="color: #333; margin-bottom: 10px;">API Integration</h4>
+                            <p style="color: #666; margin-bottom: 15px;">External system creates booking</p>
+                            <button class="btn btn-success" onclick="triggerAPI()">🔌 API Booking Event</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="channel-card">
+                    <h3>📋 Event Log</h3>
+                    <div id="eventLog" style="background: #f8f9fa; border-radius: 8px; padding: 15px; min-height: 400px; max-height: 500px; overflow-y: auto;">
+                        <p style="color: #999; text-align: center; padding: 40px;">No events yet. Trigger an event to see it here.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- POS SYSTEM TAB -->
+        <div id="pos" class="tab-content">
+            <div class="booking-panel">
+                <h2 style="color: #667eea; margin-bottom: 20px;">💰 Point of Sale - Retail Products</h2>
+                <div class="pos-container">
+                    <div>
+                        <h3 style="margin-bottom: 15px;">Available Products</h3>
+                        <div class="product-grid" id="productGrid">
+                            <!-- Products will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div class="cart-panel">
+                        <h3 style="color: #667eea; margin-bottom: 20px;">Shopping Cart</h3>
+                        <div id="cartItems">
+                            <p style="text-align: center; color: #999; padding: 40px 0;">Cart is empty</p>
+                        </div>
+                        <div class="cart-total">
+                            Total: $<span id="cartTotal">0.00</span>
+                        </div>
+                        <button class="btn btn-success" style="width: 100%; margin-top: 20px; padding: 15px;" onclick="checkout()">
+                            💳 Process Payment
+                        </button>
+                        <button class="btn" style="width: 100%; margin-top: 10px;" onclick="clearCart()">
+                            🗑️ Clear Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let cart = [];
+        let appointments = [];
+        let voiceActive = false;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            generateCalendar();
+            loadProducts();
+            loadMockAppointments();
+        });
+        
+        // Tab switching
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        // Generate calendar
+        function generateCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const days = ['Time', 'Mon\nFeb 10', 'Tue\nFeb 11', 'Wed\nFeb 12', 'Thu\nFeb 13', 'Fri\nFeb 14', 'Sat\nFeb 15', 'Sun\nFeb 16'];
+            const times = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
+            
+            // Headers
+            days.forEach(day => {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-cell header';
+                cell.innerHTML = day.replace('\n', '<br>');
+                grid.appendChild(cell);
+            });
+            
+            // Time slots
+            times.forEach(time => {
+                // Time label
+                const timeCell = document.createElement('div');
+                timeCell.className = 'calendar-cell time';
+                timeCell.textContent = time;
+                grid.appendChild(timeCell);
+                
+                // Day slots
+                for (let i = 0; i < 7; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'calendar-cell slot';
+                    slot.onclick = () => quickBookSlot(i, time);
+                    grid.appendChild(slot);
+                }
+            });
+        }
+        
+        function loadMockAppointments() {
+            const mockAppts = [
+                { day: 1, time: '10:00 AM', customer: 'Emma Wilson', service: 'Balayage', staff: 'Sarah J.' },
+                { day: 1, time: '2:00 PM', customer: 'James Brown', service: 'Haircut', staff: 'Michael C.' },
+                { day: 2, time: '11:00 AM', customer: 'Sophia Garcia', service: 'Facial', staff: 'David K.' },
+                { day: 3, time: '9:00 AM', customer: 'Michael Lee', service: 'Massage', staff: 'Emily R.' },
+                { day: 4, time: '3:00 PM', customer: 'Olivia Martinez', service: 'Manicure', staff: 'Sarah J.' }
+            ];
+            
+            appointments = mockAppts;
+            renderAppointments();
+        }
+        
+        function renderAppointments() {
+            // Clear existing appointments
+            document.querySelectorAll('.appointment').forEach(el => el.remove());
+            
+            appointments.forEach(appt => {
+                const slots = document.querySelectorAll('.calendar-cell.slot');
+                const times = ['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM'];
+                const timeIndex = times.indexOf(appt.time);
+                
+                if (timeIndex !== -1) {
+                    const slotIndex = timeIndex * 7 + appt.day;
+                    const slot = slots[slotIndex];
+                    
+                    if (slot) {
+                        slot.classList.add('booked');
+                        const apptDiv = document.createElement('div');
+                        apptDiv.className = 'appointment';
+                        apptDiv.innerHTML = `<strong>${appt.customer}</strong>${appt.service} - ${appt.staff}`;
+                        slot.appendChild(apptDiv);
+                    }
+                }
+            });
+        }
+        
+        function quickBookSlot(day, time) {
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            alert(`Quick book for ${days[day]} at ${time}\n\nFill out the booking form above to complete.`);
+            
+            // Scroll to booking form
+            document.querySelector('.booking-panel').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function createAppointment() {
+            const name = document.getElementById('customerName').value;
+            const phone = document.getElementById('customerPhone').value;
+            const service = document.getElementById('serviceSelect').value;
+            const time = document.getElementById('appointmentTime').value;
+            
+            if (!name || !phone || !service || !time) {
+                alert('Please fill in all required fields!');
+                return;
+            }
+            
+            // Add to appointments
+            const newAppt = {
+                day: new Date(time).getDay() || 1,
+                time: new Date(time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+                customer: name,
+                service: service.split('-')[0],
+                staff: 'Auto-assigned'
+            };
+            
+            appointments.push(newAppt);
+            renderAppointments();
+            
+            alert('✅ Appointment created successfully!\n\nConfirmation SMS will be sent to ' + phone);
+            
+            // Clear form
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerPhone').value = '';
+            document.getElementById('customerEmail').value = '';
+            document.getElementById('serviceSelect').value = '';
+            document.getElementById('appointmentTime').value = '';
+            document.getElementById('appointmentNotes').value = '';
+        }
+        
+        // SMS Booking
+        async function sendSMS() {
+            const input = document.getElementById('smsInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addChatMessage('smsChat', message, 'user');
+            input.value = '';
+            
+            // Show typing indicator
+            setTimeout(() => {
+                // Simulate AI response
+                const response = generateSMSResponse(message);
+                addChatMessage('smsChat', response, 'agent');
+            }, 1000);
+        }
+        
+        function quickSMS(message) {
+            document.getElementById('smsInput').value = message;
+            sendSMS();
+        }
+        
+        function generateSMSResponse(message) {
+            const lower = message.toLowerCase();
+            
+            if (lower.includes('book') || lower.includes('appointment')) {
+                if (lower.includes('haircut')) {
+                    return "I found 3 haircut slots:\n1. Tomorrow 2PM with Sarah ($75)\n2. Tomorrow 3PM with Michael ($75)\n3. Friday 11AM with Sarah ($75)\n\nReply with 1, 2, or 3 to book!";
+                } else if (lower.includes('massage')) {
+                    return "I have massage availability:\n1. Friday 2PM - Swedish Massage ($120)\n2. Friday 4PM - Deep Tissue ($135)\n3. Saturday 10AM - Hot Stone ($150)\n\nWhich would you prefer?";
+                } else {
+                    return "I can help you book! What service are you interested in? We offer:\n• Haircuts\n• Massage\n• Facials\n• Manicures/Pedicures\n• Color services";
+                }
+            } else if (lower.includes('cancel')) {
+                return "I found your upcoming appointment:\nTuesday 2PM - Haircut with Sarah\n\nReply CONFIRM to cancel this appointment.";
+            } else if (lower.includes('available') || lower.includes('open')) {
+                return "This week's availability:\n• Wed: 10AM, 2PM, 4PM\n• Thu: 9AM, 11AM, 3PM\n• Fri: 10AM, 1PM, 4PM\n• Sat: 9AM, 12PM\n\nWhat day works for you?";
+            } else {
+                return "I'm here to help! I can:\n✅ Book appointments\n✅ Check availability\n✅ Cancel/reschedule\n\nWhat would you like to do?";
+            }
+        }
+        
+        function addChatMessage(chatId, message, type) {
+            const chat = document.getElementById(chatId);
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${type}`;
+            msgDiv.innerHTML = `<strong>${type === 'user' ? 'Customer' : 'Spa Agent AI'}</strong>${message}`;
+            chat.appendChild(msgDiv);
+            chat.scrollTop = chat.scrollHeight;
+        }
+        
+        // Voice Booking
+        function toggleVoice() {
+            voiceActive = !voiceActive;
+            const btn = document.getElementById('voiceBtn');
+            const status = document.getElementById('voiceStatus');
+            const transcript = document.getElementById('transcriptContent');
+            
+            if (voiceActive) {
+                btn.classList.add('active');
+                status.textContent = '🔴 Call in progress...';
+                simulateVoiceCall();
+            } else {
+                btn.classList.remove('active');
+                status.textContent = 'Click to start call';
+            }
+        }
+        
+        function simulateVoiceCall() {
+            const transcript = document.getElementById('transcriptContent');
+            const conversation = [
+                { time: 0, speaker: 'Agent', text: 'Hi! Thanks for calling Spa AI. How can I help you today?' },
+                { time: 2000, speaker: 'Customer', text: 'I want to book a massage appointment' },
+                { time: 4000, speaker: 'Agent', text: 'Great choice! What day works best for you?' },
+                { time: 6000, speaker: 'Customer', text: 'This Friday afternoon' },
+                { time: 8000, speaker: 'Agent', text: 'I have 2PM, 3PM, or 4PM available. Which time?' },
+                { time: 10000, speaker: 'Customer', text: '2PM sounds perfect' },
+                { time: 12000, speaker: 'Agent', text: 'Excellent! Booking you for Friday at 2PM for a Swedish Massage with Emily. Confirmation sent to your phone!' },
+                { time: 14000, speaker: 'Agent', text: 'Is there anything else I can help with?' },
+                { time: 15000, speaker: 'Customer', text: 'No, that\'s all. Thank you!' },
+                { time: 16000, speaker: 'Agent', text: 'You\'re welcome! See you Friday!' }
+            ];
+            
+            transcript.innerHTML = '';
+            
+            conversation.forEach(msg => {
+                setTimeout(() => {
+                    if (voiceActive) {
+                        const line = document.createElement('p');
+                        line.innerHTML = `<strong>${msg.speaker}:</strong> "${msg.text}"`;
+                        line.style.marginBottom = '10px';
+                        transcript.appendChild(line);
+                        transcript.parentElement.scrollTop = transcript.parentElement.scrollHeight;
+                    }
+                }, msg.time);
+            });
+            
+            setTimeout(() => {
+                if (voiceActive) {
+                    voiceActive = false;
+                    document.getElementById('voiceBtn').classList.remove('active');
+                    document.getElementById('voiceStatus').textContent = '✅ Call completed - Appointment booked!';
+                }
+            }, 17000);
+        }
+        
+        // Event Booking
+        function triggerWalkIn() {
+            addEventLog('👤 Walk-In Customer', 'Customer arrived without appointment. Auto-creating slot...', 'success');
+            setTimeout(() => {
+                addEventLog('✅ Walk-In Processed', 'Added walk-in appointment for next available slot (11:30 AM today)', 'success');
+            }, 1500);
+        }
+        
+        function triggerWebForm() {
+            addEventLog('📝 Web Form Submitted', 'Customer: Jane Smith\nService: Facial\nRequested: Friday 3PM', 'info');
+            setTimeout(() => {
+                addEventLog('✅ Booking Confirmed', 'Appointment created. Confirmation email sent to jane.smith@email.com', 'success');
+            }, 2000);
+        }
+        
+        function triggerEmail() {
+            addEventLog('📧 Email Received', 'From: customer@email.com\nSubject: "Appointment Request"\nParsing email content...', 'info');
+            setTimeout(() => {
+                addEventLog('🤖 AI Processing', 'Extracted:\n• Service: Balayage\n• Date: Next Thursday\n• Time: Afternoon\nFinding availability...', 'info');
+            }, 1500);
+            setTimeout(() => {
+                addEventLog('✅ Auto-Booked', 'Created appointment Thursday 2PM. Reply email sent with confirmation.', 'success');
+            }, 3000);
+        }
+        
+        function triggerAPI() {
+            addEventLog('🔌 API Request', 'POST /api/appointments\nSource: External booking widget\nProcessing...', 'info');
+            setTimeout(() => {
+                addEventLog('✅ API Success', 'Appointment created via API integration. Response: 201 Created', 'success');
+            }, 1000);
+        }
+        
+        function addEventLog(title, message, type) {
+            const log = document.getElementById('eventLog');
+            
+            // Remove placeholder
+            if (log.querySelector('p')) {
+                log.innerHTML = '';
+            }
+            
+            const entry = document.createElement('div');
+            entry.style.marginBottom = '15px';
+            entry.style.padding = '15px';
+            entry.style.background = 'white';
+            entry.style.borderRadius = '8px';
+            entry.style.borderLeft = `4px solid ${type === 'success' ? '#28a745' : '#667eea'}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            entry.innerHTML = `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <strong style="color: #667eea;">${title}</strong>
+                    <span class="badge badge-${type}">${timestamp}</span>
+                </div>
+                <div style="color: #666; white-space: pre-line;">${message}</div>
+            `;
+            
+            log.insertBefore(entry, log.firstChild);
+        }
+        
+        // POS System
+        function loadProducts() {
+            const products = [
+                { id: 1, name: 'Professional Shampoo', price: 28.00, stock: 12, category: 'Hair Care' },
+                { id: 2, name: 'Conditioner - Hydrating', price: 32.00, stock: 8, category: 'Hair Care' },
+                { id: 3, name: 'Hair Mask - Repair', price: 45.00, stock: 6, category: 'Hair Care' },
+                { id: 4, name: 'Styling Cream', price: 24.00, stock: 15, category: 'Hair Care' },
+                { id: 5, name: 'Facial Cleanser', price: 38.00, stock: 10, category: 'Skincare' },
+                { id: 6, name: 'Moisturizer - SPF 30', price: 52.00, stock: 7, category: 'Skincare' },
+                { id: 7, name: 'Eye Cream', price: 68.00, stock: 5, category: 'Skincare' },
+                { id: 8, name: 'Serum - Vitamin C', price: 58.00, stock: 9, category: 'Skincare' },
+                { id: 9, name: 'Nail Polish Set', price: 35.00, stock: 20, category: 'Nails' },
+                { id: 10, name: 'Cuticle Oil', price: 12.00, stock: 25, category: 'Nails' },
+                { id: 11, name: 'Hand Cream', price: 18.00, stock: 18, category: 'Body' },
+                { id: 12, name: 'Body Lotion', price: 42.00, stock: 11, category: 'Body' }
+            ];
+            
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = products.map(product => `
+                <div class="product-card" onclick="addToCart(${product.id}, '${product.name}', ${product.price})">
+                    <h4>${product.name}</h4>
+                    <div class="price">$${product.price.toFixed(2)}</div>
+                    <div class="stock">${product.stock} in stock</div>
+                    <div class="badge badge-info" style="margin-top: 8px;">${product.category}</div>
+                </div>
+            `).join('');
+        }
+        
+        function addToCart(id, name, price) {
+            const existing = cart.find(item => item.id === id);
+            
+            if (existing) {
+                existing.quantity++;
+            } else {
+                cart.push({ id, name, price, quantity: 1 });
+            }
+            
+            renderCart();
+        }
+        
+        function renderCart() {
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p style="text-align: center; color: #999; padding: 40px 0;">Cart is empty</p>';
+                cartTotal.textContent = '0.00';
+                return;
+            }
+            
+            cartItems.innerHTML = cart.map(item => `
+                <div class="cart-item">
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <span style="color: #666; font-size: 14px;">Qty: ${item.quantity} × $${item.price.toFixed(2)}</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <strong style="color: #667eea;">$${(item.quantity * item.price).toFixed(2)}</strong><br>
+                        <button onclick="removeFromCart(${item.id})" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 12px;">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            const total = cart.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            cartTotal.textContent = total.toFixed(2);
+        }
+        
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            renderCart();
+        }
+        
+        function clearCart() {
+            if (cart.length === 0) return;
+            if (confirm('Clear all items from cart?')) {
+                cart = [];
+                renderCart();
+            }
+        }
+        
+        function checkout() {
+            if (cart.length === 0) {
+                alert('Cart is empty!');
+                return;
+            }
+            
+            const total = cart.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+            const items = cart.map(item => `${item.quantity}x ${item.name}`).join('\n');
+            
+            if (confirm(`Process payment of $${total.toFixed(2)}?\n\nItems:\n${items}`)) {
+                alert('✅ Payment processed successfully!\n\n💳 Total: $' + total.toFixed(2) + '\n📧 Receipt sent via email\n📦 Inventory updated');
+                cart = [];
+                renderCart();
+            }
+        }
+    </script>
+</body>
+</html>
