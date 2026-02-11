@@ -461,16 +461,29 @@ async def root():
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'}
                     });
+                    
+                    // Log response status for debugging
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Error response:', errorText);
+                        throw new Error(`API Error (${response.status}): ${errorText}`);
+                    }
+                    
                     const data = await response.json();
+                    console.log('Agent response:', data);
                     
                     if (data.status === 'success') {
                         displayChurnInsights(data);
                         document.getElementById('ai-status').textContent = '✅ Analysis Complete';
                     } else {
-                        container.innerHTML = '<div class="loading"><p style="color: red;">❌ Error: ' + data.error + '</p></div>';
+                        const errorMsg = data.detail || data.error || JSON.stringify(data);
+                        container.innerHTML = '<div class="loading"><p style="color: red;">❌ Error: ' + errorMsg + '</p></div>';
                         document.getElementById('ai-status').textContent = '❌ Error';
                     }
                 } catch (error) {
+                    console.error('Failed to run analysis:', error);
                     container.innerHTML = '<div class="loading"><p style="color: red;">❌ Failed to run analysis: ' + error.message + '</p></div>';
                     document.getElementById('ai-status').textContent = '❌ Error';
                 }
@@ -563,6 +576,48 @@ async def health_check():
 # AI AGENT ENDPOINTS - NEWLY ACTIVATED! 🤖
 # ================================================================
 
+@app.post("/api/agents/test")
+async def test_agent_endpoint():
+    """Simple test endpoint to verify agent infrastructure works"""
+    try:
+        api_key = os.getenv('ANTHROPIC_API_KEY')
+        
+        if not api_key:
+            return {
+                "status": "error",
+                "message": "ANTHROPIC_API_KEY not set"
+            }
+        
+        # Try creating client
+        client = anthropic.Anthropic(api_key=api_key)
+        
+        # Try a simple API call
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=100,
+            messages=[{
+                "role": "user",
+                "content": "Say 'Agent test successful!' and nothing else."
+            }]
+        )
+        
+        response_text = message.content[0].text
+        
+        return {
+            "status": "success",
+            "message": "Agent infrastructure is working!",
+            "claude_response": response_text,
+            "api_key_present": True
+        }
+        
+    except Exception as e:
+        logger.error(f"Test agent error: {e}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "error_type": type(e).__name__
+        }
+
 @app.post("/api/agents/run-churn-detection", response_model=AgentAnalysisResponse)
 async def run_churn_detection_agent(conn=Depends(get_db)):
     """
@@ -587,7 +642,7 @@ async def run_churn_detection_agent(conn=Depends(get_db)):
                 email,
                 phone,
                 last_visit,
-                EXTRACT(DAY FROM (CURRENT_DATE - last_visit))::INTEGER as days_since_visit,
+                (CURRENT_DATE - last_visit) as days_since_visit,
                 total_visits,
                 total_spent,
                 loyalty_points,
@@ -840,7 +895,7 @@ async def get_at_risk_customers(conn=Depends(get_db)):
             SELECT 
                 id, name, email, phone,
                 last_visit,
-                EXTRACT(DAY FROM (CURRENT_DATE - last_visit))::INTEGER as days_since_visit,
+                (CURRENT_DATE - last_visit) as days_since_visit,
                 total_visits,
                 total_spent,
                 loyalty_points
