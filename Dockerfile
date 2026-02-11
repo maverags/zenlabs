@@ -15,6 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the API folder
 COPY api/ ./api/
 
+# Copy the booking demo HTML file
+COPY index.html ./index.html
+
 # Expose port
 EXPOSE 8080
 

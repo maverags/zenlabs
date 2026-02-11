@@ -4,7 +4,8 @@ Complete version with dashboard UI, API routes, and ACTIVE AI AGENTS
 """
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import asyncpg
 import os
@@ -14,6 +15,7 @@ from pydantic import BaseModel
 import logging
 import anthropic
 import json
+from pathlib import Path
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -114,6 +116,41 @@ class AgentAnalysisResponse(BaseModel):
     total_opportunity: float
     confidence: float
     timestamp: datetime
+
+# ================================================================
+# STATIC FILE SERVING
+# ================================================================
+
+@app.get("/booking", response_class=HTMLResponse)
+async def booking_demo():
+    """Serve the omnichannel booking & POS demo"""
+    try:
+        # Try to read from root directory (where index.html is)
+        index_path = Path("/app/index.html")
+        if index_path.exists():
+            with open(index_path, "r") as f:
+                return HTMLResponse(content=f.read())
+        
+        # Fallback: return error message
+        return HTMLResponse(
+            content="""
+            <html>
+                <body style="font-family: Arial; padding: 40px; text-align: center;">
+                    <h1>🔍 Booking Demo Not Found</h1>
+                    <p>index.html should be in the root directory</p>
+                    <p>Current working directory: {}</p>
+                    <p><a href="/">← Back to Dashboard</a></p>
+                </body>
+            </html>
+            """.format(os.getcwd()),
+            status_code=404
+        )
+    except Exception as e:
+        logger.error(f"Error serving booking demo: {e}")
+        return HTMLResponse(
+            content=f"<html><body><h1>Error</h1><p>{str(e)}</p><p><a href='/'>← Back to Dashboard</a></p></body></html>",
+            status_code=500
+        )
 
 # ================================================================
 # DASHBOARD UI - ROOT ENDPOINT
@@ -389,6 +426,12 @@ async def root():
             <h2 style="color: white; margin: 30px 0 20px 0; text-align: center;">🔧 Quick Actions</h2>
 
             <div class="cards">
+                <div class="card" onclick="window.location.href='/booking'">
+                    <h3>📅 Omnichannel Booking</h3>
+                    <p>Interactive booking demo - SMS, Voice, Web, Events & POS</p>
+                    <a class="btn btn-success">Launch Demo</a>
+                </div>
+
                 <div class="card" onclick="window.open('/api/services', '_blank')">
                     <h3>📋 Services</h3>
                     <p>View all 30 professional services with pricing and details.</p>
