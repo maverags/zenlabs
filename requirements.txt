@@ -1,6 +1,6 @@
-# FastAPI and Server
 fastapi
 uvicorn[standard]
 asyncpg
 anthropic==0.39.0
+httpx
 pydantic

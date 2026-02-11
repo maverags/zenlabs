@@ -683,8 +683,20 @@ async def run_churn_detection_agent(conn=Depends(get_db)):
         # Call Claude API for analysis
         logger.info(f"📤 Sending {len(customer_data)} customers to Claude for analysis...")
         
-        # Create Anthropic client (avoids startup proxy issues on Fly.io)
-        client = anthropic.Anthropic(api_key=api_key)
+        # Create Anthropic async client with custom httpx client to avoid Fly.io proxy issues
+        import httpx
+        
+        # Create httpx client without proxy configuration
+        http_client = httpx.AsyncClient(
+            timeout=60.0,
+            limits=httpx.Limits(max_connections=10)
+        )
+        
+        # Create AsyncAnthropic client
+        client = anthropic.AsyncAnthropic(
+            api_key=api_key,
+            http_client=http_client
+        )
         
         prompt = f"""You are a customer retention expert for a spa/salon business. Analyze these at-risk customers and provide retention recommendations.
 
@@ -712,7 +724,7 @@ Respond in JSON format with an array of customer insights:
   "summary": "Brief overall summary of the churn situation"
 }}"""
 
-        message = client.messages.create(
+        message = await client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=2000,
             messages=[{
@@ -720,6 +732,9 @@ Respond in JSON format with an array of customer insights:
                 "content": prompt
             }]
         )
+        
+        # Close the httpx client
+        await http_client.aclose()
         
         # Parse Claude's response
         response_text = message.content[0].text
