@@ -22,13 +22,10 @@ logger = logging.getLogger(__name__)
 # Database connection pool
 db_pool = None
 
-# Anthropic client
-anthropic_client = None
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
-    global db_pool, anthropic_client
+    global db_pool
     
     # Startup: Create database pool
     database_url = os.getenv('DATABASE_URL')
@@ -47,11 +44,10 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to create database pool: {e}")
         raise
     
-    # Initialize Anthropic client
+    # Check if Anthropic API key is available
     api_key = os.getenv('ANTHROPIC_API_KEY')
     if api_key:
-        anthropic_client = anthropic.Anthropic(api_key=api_key)
-        logger.info("✅ Anthropic client initialized")
+        logger.info("✅ ANTHROPIC_API_KEY found - AI agents enabled")
     else:
         logger.warning("⚠️ ANTHROPIC_API_KEY not set - AI agents will be disabled")
     
@@ -576,7 +572,9 @@ async def run_churn_detection_agent(conn=Depends(get_db)):
     personalized retention recommendations with ROI projections.
     """
     try:
-        if not anthropic_client:
+        # Check for API key
+        api_key = os.getenv('ANTHROPIC_API_KEY')
+        if not api_key:
             raise HTTPException(status_code=503, detail="AI agents not available - ANTHROPIC_API_KEY not set")
         
         logger.info("🤖 Starting Churn Detection Agent...")
@@ -630,6 +628,9 @@ async def run_churn_detection_agent(conn=Depends(get_db)):
         # Call Claude API for analysis
         logger.info(f"📤 Sending {len(customer_data)} customers to Claude for analysis...")
         
+        # Create Anthropic client (avoids startup proxy issues on Fly.io)
+        client = anthropic.Anthropic(api_key=api_key)
+        
         prompt = f"""You are a customer retention expert for a spa/salon business. Analyze these at-risk customers and provide retention recommendations.
 
 Customer Data:
@@ -656,7 +657,7 @@ Respond in JSON format with an array of customer insights:
   "summary": "Brief overall summary of the churn situation"
 }}"""
 
-        message = anthropic_client.messages.create(
+        message = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=2000,
             messages=[{
